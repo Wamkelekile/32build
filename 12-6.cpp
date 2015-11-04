@@ -25,14 +25,18 @@ struct process_desc {
 };
 
 void first_space(file_desc &cur){
+//    std::cout << 'H' << cur.f_name << std::endl;
     int i = 0;
+    char buf[1020];
     while(isspace(cur.f_name[i])){
         i++;
     }
-    strcpy(cur.f_name, cur.f_name + i);
+    strcpy(buf, cur.f_name + i);
+    strcpy(cur.f_name, buf);
 }
 
 void last_space(file_desc &cur) {
+  //  cout << 'h' << cur.f_name << endl;
     string s(cur.f_name);
     int size = s.length() - 1;
     while(isspace(cur.f_name[size])){
