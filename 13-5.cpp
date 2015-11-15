@@ -43,10 +43,10 @@ private:
 
 int main(int argc, char *argv[]) {
 	long long count = 0;
-	if (!(access(argv[1], F_OK) == 0) ) {
-		std::cout << -1 << std::endl;
-		return 0;
-	}
+	//if (!(access(argv[1], F_OK) == 0) ) {
+	//	std::cout << -1 << std::endl;
+	//	return 0;
+	//}
 	File f(argv[1]);
 	if (f.get_fd() == -1) {
 		cerr << "Couldn't open input file" << endl;
@@ -54,7 +54,6 @@ int main(int argc, char *argv[]) {
 	}
 	Elf32_Ehdr header_stat;
 	int *kmap;
-	cout << f.size() << endl;
 
 	// char *current_char = (char *) mmap(NULL, f.size(), PROT_READ, MAP_SHARED, f.get_fd(), 0);
 	kmap = (int *) mmap(NULL, f.size(), PROT_READ, MAP_SHARED, f.get_fd(), 0);
@@ -68,7 +67,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	if (!((header_stat.e_ident[0] == '\x7f') && (header_stat.e_ident[1] == 'E')
-	 	&& (header_stat.e_ident[2] == 'E') && (header_stat.e_ident[3] = 'F'))) {
+	 	&& (header_stat.e_ident[2] == 'L') && (header_stat.e_ident[3] = 'F'))) {
 		cerr << "Not an ELF file" << endl;
 		return 1;
 	}
