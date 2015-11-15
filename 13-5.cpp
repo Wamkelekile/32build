@@ -13,31 +13,16 @@
 
 using namespace std;
 
-// typedef struct
-// {
-//     unsigned char e_ident[16];
-//     uint16_t      e_type;
-//     uint16_t      e_machine;
-//     uint32_t      e_version;
-//     uint32_t      e_entry;
-//     uint32_t      e_phoff;
-//     uint32_t      e_shoff;
-//     uint32_t      e_flags;
-//     uint16_t      e_ehsize;
-//     uint16_t      e_phentsize;
-//     uint16_t      e_phnum;
-//     uint16_t      e_shentsize;
-//     uint16_t      e_shnum;
-//     uint16_t      e_shstrndx;
-// } Elf32_Ehdr;
 
 class File {
 public:
 	File(char* file_name) {
 		f_ = 0;
 		f_ = open(file_name, O_RDONLY, 0);
-		fstat (f_, &	s_);
-		f_size_ = s_.st_size;
+		if (f_ != -1) {
+			fstat (f_, &	s_);
+			f_size_ = s_.st_size;
+		}
 	}
 	~File() {
 		if(f_ != 0 ) {
@@ -63,6 +48,10 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 	File f(argv[1]);
+	if (f.get_fd() == -1) {
+		cerr << "Couldn't open input file" << endl;
+		return 1;
+	}
 	Elf32_Ehdr header_stat;
 	int *kmap;
 	cout << f.size() << endl;
@@ -72,20 +61,15 @@ int main(int argc, char *argv[]) {
 	if (kmap == MAP_FAILED) {
 		cout << "FAIL!" << endl;
 	}
-	// string s("abcd");
-	// char * data = s.c_str();
-	// cout << *current_char << endl;
-	
-	// int n = *(reinterpret_cast<int *>(current_char)); // current_char is my data
-	// int n = *(reinterpret_cast<int *>(current_char)); // current_char is my data
-	char buf[10];
-	
-	// cout << *buf << endl;
-	//cout << "last_point: "<< header_stat.e_shstrndx << endl;
-
 	int well_red = read(f.get_fd(), &header_stat, 52);
+	// ERRORS
 	if (well_red != 52) {
 		cerr << "Error while reading ELF Header" << endl;
+		return 1;
+	}
+	if (!((header_stat.e_ident[0] == '\x7f') && (header_stat.e_ident[1] == 'E')
+	 	&& (header_stat.e_ident[2] == 'E') && (header_stat.e_ident[3] = 'F'))) {
+		cerr << "Not an ELF file" << endl;
 		return 1;
 	}
 	if ((header_stat.e_ident[4] != 1) ||
@@ -94,17 +78,11 @@ int main(int argc, char *argv[]) {
 		cerr << "Not supported ELF file" << endl;
 		return 1;
 	}
-	
-	
 
-	// cout << *buf << endl;
-	//cout << "red header status: "<< well_red << endl;
-	//cout << "type:"<<header_stat.e_type << endl; 
-	//cout << "sh_num: "<< header_stat.e_shnum << endl;
-	//cout << "e_shstrndx: "<< header_stat.e_shstrndx << endl;
-	// read sections table
-	//int fd = f.get_fd();
-	//fd += header_stat.e_shoff;
+
+
+	// START pRINT
+
 	if (header_stat.e_type == 0) {
 		printf("TYPE: NONE\n");
 	} else if(header_stat.e_type == 1) {
