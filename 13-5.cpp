@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <iostream>
 #include <elf.h>
-
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -81,16 +81,60 @@ int main(int argc, char *argv[]) {
 	char buf[10];
 	
 	// cout << *buf << endl;
-	cout << "last_point: "<< header_stat.e_shstrndx << endl;
+	//cout << "last_point: "<< header_stat.e_shstrndx << endl;
 
 	int well_red = read(f.get_fd(), &header_stat, 52);
+	if (well_red != 52) {
+		cerr << "Error while reading ELF Header" << endl;
+		return 1;
+	}
+	if ((header_stat.e_ident[4] != 1) ||
+	 ((header_stat.e_ident[5] != 1) && (header_stat.e_ident[5] != 2)) ||
+	(header_stat.e_ident[6] != 1) ) {
+		cerr << "Not supported ELF file" << endl;
+		return 1;
+	}
+	
+	
 
 	// cout << *buf << endl;
-	cout << "red header status: "<< well_red << endl;
-	cout << "type:"<<header_stat.e_type << "|" << "shoff:"  << header_stat.e_shoff << endl; 
-	cout << "sh_num: "<< header_stat.e_shnum << endl;
-	cout << "last_point: "<< header_stat.e_ehsize << endl;
+	//cout << "red header status: "<< well_red << endl;
+	//cout << "type:"<<header_stat.e_type << endl; 
+	//cout << "sh_num: "<< header_stat.e_shnum << endl;
+	//cout << "e_shstrndx: "<< header_stat.e_shstrndx << endl;
+	// read sections table
+	//int fd = f.get_fd();
+	//fd += header_stat.e_shoff;
+	if (header_stat.e_type == 0) {
+		printf("TYPE: NONE\n");
+	} else if(header_stat.e_type == 1) {
+		printf("TYPE: REL\n");
+	} else if(header_stat.e_type == 2) {
+		printf("TYPE: EXEC\n");
+	} else if(header_stat.e_type == 3) {
+		printf("TYPE: DYN\n");
+	} else if(header_stat.e_type == 4) {
+		printf("TYPE: CORE\n");
+	}
+	Elf32_Shdr names_section_header;
+	pread(f.get_fd(), &names_section_header, 40,
+		 header_stat.e_shoff + 40 * header_stat.e_shstrndx);
+	printf("%20s %10s %10s %10s %06s\n", "NAME", "ADDR", "OFFSET", "SIZE", "ALGN");
+	for(int i = 0; i <= header_stat.e_shnum - 1; ++i) {
+		Elf32_Shdr cur_sec_header;
 
+		int well_sec_read = pread(f.get_fd(), &cur_sec_header,
+					  40, header_stat.e_shoff + 40 * i);
+		if(!i) continue;
+		string name;
+		name.resize(20);
+			pread(f.get_fd(),(char*) name.c_str(), 20,
+		 names_section_header.sh_offset + cur_sec_header.sh_name);
+		printf("%20s 0x%08x %10d %10d 0x%04x\n",
+			 name.c_str(), cur_sec_header.sh_addr,
+			 cur_sec_header.sh_offset, cur_sec_header.sh_size,
+			 cur_sec_header.sh_addralign);
+	}
 
 
 	return 0;
