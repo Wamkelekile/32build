@@ -42,7 +42,7 @@ private:
 };
 
 int main(int argc, char *argv[]) {
-	long long count = 0;
+  //long long count = 0;
 	//if (!(access(argv[1], F_OK) == 0) ) {
 	//	std::cout << -1 << std::endl;
 	//	return 0;
@@ -53,13 +53,10 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	Elf32_Ehdr header_stat;
-	int *kmap;
+	//int *kmap;
 
-	// char *current_char = (char *) mmap(NULL, f.size(), PROT_READ, MAP_SHARED, f.get_fd(), 0);
-	kmap = (int *) mmap(NULL, f.size(), PROT_READ, MAP_SHARED, f.get_fd(), 0);
-	if (kmap == MAP_FAILED) {
-		cout << "FAIL!" << endl;
-	}
+	//char *current_char = (char *) mmap(NULL, f.size(), PROT_READ, MAP_SHARED, f.get_fd(), 0);
+	//int filedesk = (int) mmap(NULL, f.size(), PROT_READ, MAP_SHARED, f.get_fd(), 0);
 	int well_red = read(f.get_fd(), &header_stat, 52);
 	// ERRORS
 	if (well_red != 52) {
@@ -96,11 +93,11 @@ int main(int argc, char *argv[]) {
 	Elf32_Shdr names_section_header;
 	pread(f.get_fd(), &names_section_header, 40,
 		 header_stat.e_shoff + 40 * header_stat.e_shstrndx);
-	printf("%20s %10s %10s %10s %06s\n", "NAME", "ADDR", "OFFSET", "SIZE", "ALGN");
+	printf("%20s %10s %10s %10s %6s\n", "NAME", "ADDR", "OFFSET", "SIZE", "ALGN");
 	for(int i = 0; i <= header_stat.e_shnum - 1; ++i) {
 		Elf32_Shdr cur_sec_header;
 
-		int well_sec_read = pread(f.get_fd(), &cur_sec_header,
+		pread(f.get_fd(), &cur_sec_header,
 					  40, header_stat.e_shoff + 40 * i);
 		if(!i) continue;
 		string name;
