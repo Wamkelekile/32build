@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
 			}
 			in_comp *= -1;
 		}
-		if ((curr_stab.n_type == N_SOL) && (is_func) && (!sline_was)) {
+		if ((curr_stab.n_type == 0x84)) {
 			string source_name;
 			source_name.resize(50);
 			char * source_ptr = (char *) source_name.c_str();
