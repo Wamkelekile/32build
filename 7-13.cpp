@@ -225,9 +225,58 @@ int main(int argc, char *argv[]) {
 
 	  // name index start end source
 	}
-	sort(all_func.begin(), all_func.end(), comp);
-	for (size_t k = 0; k < all_func.size(); ++k) {
-		printf("%s %d 0x%08x 0x%08x %s\n", all_func[k].name.c_str(), all_func[k].index, all_func[k].start, all_func[k].end, all_func[k].source.c_str());
+	// sort(all_func.begin(), all_func.end(), comp);
+	// for (size_t k = 0; k < all_func.size(); ++k) {
+	// 	printf("%s %d 0x%08x 0x%08x %s\n", all_func[k].name.c_str(), all_func[k].index, all_func[k].start, all_func[k].end, all_func[k].source.c_str());
+	// }
+	uint32_t num;
+	uint32_t smoff;
+	uint16_t line_num;
+	string addr_name;
+	string addr_source;
+
+
+	bool found = false;
+	while(scanf("%x", &num) == 1) {
+		for (size_t k = 0; k < all_func.size(); ++k) {
+			if ((num >= all_func[k].start) && (num < all_func[k].end)) { // we have source, func, shoff
+				addr_name = all_func[k].name;
+				addr_source = all_func[k].source;
+				found = true;
+				smoff = all_func[k].start - num;
+				std::vector<Stab> stab_2(2);
+				Stab curr_stab;
+				for (int i = all_func[k].index; i < count_of_blocks; ++i) {
+					/* code */
+				  	pread(f.get_fd(), &curr_stab, sizeof(curr_stab),
+						stab_header.sh_offset + sizeof(curr_stab) * i);
+				  	if (curr_stab.n_type == N_SLINE) {
+				  		if (curr_stab.n_value < smoff) {
+				  			stab_2[0] = stab_2[1];
+				  			stab_2[1] = curr_stab;
+				  		} else if (curr_stab.n_value == smoff) {// это наша
+				  			line_num = curr_stab.n_desc;
+				  			break;
+
+
+				  		} else { // наша предыдущая
+				  			line_num = stab_2[1].n_desc;
+				  			break;
+
+				  		}
+
+				  	}
+				}
+
+
+
+
+				break;
+			}
+		}
+		if (found) printf("0x%08x:%s:%s:%x:%d\n", num, addr_source.c_str(),addr_name.c_str(), smoff, line_num ); 
+		else printf("0x%08x::::\n", num);
+		found = false;
 	}
 
 
