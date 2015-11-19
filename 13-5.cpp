@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 	//int *kmap;
 	char *current_char = (char *) mmap(NULL, f.size(), PROT_READ, MAP_SHARED, f.get_fd(), 0);
 	//int filedesk = (int) mmap(NULL, f.size(), PROT_READ, MAP_SHARED, f.get_fd(), 0);
-	int well_red = read(f.get_fd(), &header_stat, 52);
+	read(f.get_fd(), &header_stat, 52);
 
 	// START pRINT
 
@@ -192,8 +192,6 @@ int main(int argc, char *argv[]) {
 				sline_was = false;
 			}
 			is_func = true; // expect N_So or N_func
-			size_t st_index = 0;
-			size_t pos = 0;
 			string fun_name;
 			fun_name.resize(50);
 			char * name = (char *) fun_name.c_str();
