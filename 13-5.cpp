@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 	//int *kmap;
 	char *current_char = (char *) mmap(NULL, f.size(), PROT_READ, MAP_SHARED, f.get_fd(), 0);
 	//int filedesk = (int) mmap(NULL, f.size(), PROT_READ, MAP_SHARED, f.get_fd(), 0);
-	int well_red = read(f.get_fd(), &header_stat, 52);
+	read(f.get_fd(), &header_stat, 52);
 
 	// START pRINT
 
@@ -98,6 +98,12 @@ int main(int argc, char *argv[]) {
 	pread(f.get_fd(), &names_section_header, 40,
 		 header_stat.e_shoff + 40 * header_stat.e_shstrndx);
 	Elf32_Shdr stab_header, stabstr_header;
+	stabstr_header.n_strx = 0;
+  	stabstr_header.n_type = 0;
+  	stabstr_header.n_other = 0;
+  	stabstr_header.n_desc = 0;
+  	stabstr_header.n_value = 0;
+
 	for(int i = 0; i <= header_stat.e_shnum - 1; ++i) {
 		Elf32_Shdr cur_sec_header;
 		pread(f.get_fd(), &cur_sec_header,
@@ -147,6 +153,20 @@ int main(int argc, char *argv[]) {
 				tmp_f.source = source;
 				all_func.push_back(tmp_f);
 				sline_was = false;
+				is_func = false;
+				source = "";
+			} else {
+				string source_name;
+				source_name.resize(50);
+				char * source_ptr = (char *) source_name.c_str();
+				char * read_source_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
+				while(*read_source_name != '\0') {
+					*source_ptr = *read_source_name;
+					read_source_name++;
+					source_ptr++;
+				}
+				*source_ptr = '\0';
+				source = source_name;
 			}
 			in_comp  = !in_comp;
 			//is_func = false;
@@ -166,6 +186,8 @@ int main(int argc, char *argv[]) {
 		}
 		if ((curr_stab.n_type == N_SLINE) && is_func) sline_was = true;
 	  	if (curr_stab.n_type == N_FUN) {
+			f_start = curr_stab.n_value;
+			f_index = j;
 			if (is_func) { // push f_sescription
 				//
 				myStab tmp_f;
@@ -178,8 +200,6 @@ int main(int argc, char *argv[]) {
 				sline_was = false;
 			}
 			is_func = true; // expect N_So or N_func
-			size_t st_index = 0;
-			size_t pos = 0;
 			string fun_name;
 			fun_name.resize(50);
 			char * name = (char *) fun_name.c_str();
@@ -191,8 +211,6 @@ int main(int argc, char *argv[]) {
 			}
 			*name = '\0';
 			true_f_name = fun_name;
-			f_start = curr_stab.n_value;
-			f_index = j;
 
 			//cout << st_index << ' '<< curr_stab.n_strx << endl;
 	    		//cout << "J:"  << fun_name << endl;
