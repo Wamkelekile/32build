@@ -98,12 +98,17 @@ int main(int argc, char *argv[]) {
 	pread(f.get_fd(), &names_section_header, 40,
 		 header_stat.e_shoff + 40 * header_stat.e_shstrndx);
 	Elf32_Shdr stab_header, stabstr_header;
-	stabstr_header.n_strx = 0;
-  	stabstr_header.n_type = 0;
-  	stabstr_header.n_other = 0;
-  	stabstr_header.n_desc = 0;
-  	stabstr_header.n_value = 0;
-
+	stabstr_header.sh_name = 0;
+  	stabstr_header.sh_type = 0;
+  	stabstr_header.sh_flags = 0;
+  	stabstr_header.sh_addr = 0;
+  	stabstr_header.sh_offset = 0;
+  	stabstr_header.sh_size = 0;
+  	stabstr_header.sh_link = 0;
+  	stabstr_header.sh_info = 0;
+  	stabstr_header.sh_addralign = 0;
+  	stabstr_header.sh_entsize = 0;
+  	
 	for(int i = 0; i <= header_stat.e_shnum - 1; ++i) {
 		Elf32_Shdr cur_sec_header;
 		pread(f.get_fd(), &cur_sec_header,
