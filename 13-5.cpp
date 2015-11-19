@@ -147,6 +147,20 @@ int main(int argc, char *argv[]) {
 				tmp_f.source = source;
 				all_func.push_back(tmp_f);
 				sline_was = false;
+				is_func = false;
+				source = "";
+			} else {
+				string source_name;
+				source_name.resize(50);
+				char * source_ptr = (char *) source_name.c_str();
+				char * read_source_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
+				while(*read_source_name != '\0') {
+					*source_ptr = *read_source_name;
+					read_source_name++;
+					source_ptr++;
+				}
+				*source_ptr = '\0';
+				source = source_name;
 			}
 			in_comp  = !in_comp;
 			//is_func = false;
