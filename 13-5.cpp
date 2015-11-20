@@ -31,6 +31,8 @@ struct myStab {
 	uintptr_t start;
 	uintptr_t end;
 	string source;
+	bool sline_was;
+	bool so_was;
 
 };
 
@@ -136,50 +138,18 @@ int main(int argc, char *argv[]) {
 	vector<myStab> all_func;
 	Stab curr_stab;
 	int count_of_blocks = stab_header.sh_size / sizeof(curr_stab);
-	bool in_comp = false;
-	bool is_func = false;
-	bool sline_was = false;
-	string source, true_f_name;
-	int f_index;
-	uintptr_t f_start;
-	for (int j = 0; j < count_of_blocks; ++j) {
-		if (!j) continue;
+	myStab stab_to_add;
+	string source_file;
+	source_file.resize(100);
+	for (int j = 1; j < count_of_blocks; ++j) {
+
 	  	pread(f.get_fd(), &curr_stab, sizeof(curr_stab),
 			stab_header.sh_offset + sizeof(curr_stab) * j);
 		//if (in_comp) cout << "WELL" << endl;
-		if (curr_stab.n_type == N_SO) {
-			if (in_comp) { //push func_desc we have f_end and source
-				//printf("%s %d 0x%08x 0x%08x %s\n", true_f_name.c_str(), f_index, f_start, curr_stab.n_value, source.c_str());
-				myStab tmp_f;
-				tmp_f.name = true_f_name;
-				tmp_f.index = f_index;
-				tmp_f.start = f_start;
-				tmp_f.end = curr_stab.n_value;
-				tmp_f.source = source;
-				all_func.push_back(tmp_f);
-				sline_was = false;
-				is_func = false;
-				source = "";
-			} else {
-				string source_name;
-				source_name.resize(50);
-				char * source_ptr = (char *) source_name.c_str();
-				char * read_source_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
-				while(*read_source_name != '\0') {
-					*source_ptr = *read_source_name;
-					read_source_name++;
-					source_ptr++;
-				}
-				*source_ptr = '\0';
-				source = source_name;
-			}
-			in_comp  = !in_comp;
-			//is_func = false;
-		}
-		if ((curr_stab.n_type == N_SOL) && (is_func) && (!sline_was)) {
-			string source_name;
-			source_name.resize(50);
-			char * source_ptr = (char *) source_name.c_str();
+		if (curr_stab.n_type == N_SO || curr_stab.n_type == N_SOL) {
+			// string source_name;
+			// source_file.resize(100);
+			char * source_ptr = (char *) source_file.c_str();
 			char * read_source_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
 			while(*read_source_name != '\0') {
 				*source_ptr = *read_source_name;
@@ -187,27 +157,27 @@ int main(int argc, char *argv[]) {
 				source_ptr++;
 			}
 			*source_ptr = '\0';
-			source = source_name;
-		}
-		if ((curr_stab.n_type == N_SLINE) && is_func) sline_was = true;
-	  	if (curr_stab.n_type == N_FUN) {
-			f_start = curr_stab.n_value;
-			f_index = j;
-			if (is_func) { // push f_sescription
-				//
-				myStab tmp_f;
-				tmp_f.name = true_f_name;
-				tmp_f.index = f_index;
-				tmp_f.start = f_start;
-				tmp_f.end = curr_stab.n_value;
-				tmp_f.source = source;
-				all_func.push_back(tmp_f);
-				sline_was = false;
+			if ((strcmp(source_file.c_str(), "") == 0) && curr_stab.n_type == N_SO) {
+				if (all_func.size() != 0) {
+		  			all_func[all_func.size() - 1].end = curr_stab.n_value;
+		  			all_func[all_func.size() - 1].so_was = true;
+		  		}
+
 			}
-			is_func = true; // expect N_So or N_func
-			string fun_name;
-			fun_name.resize(50);
-			char * name = (char *) fun_name.c_str();
+			// source_file = source_name;
+	  	}
+	  	if (curr_stab.n_type == N_SLINE) {
+	  		if (all_func.size() != 0) {
+	  			if (!all_func[all_func.size() - 1].sline_was) {
+	  				all_func[all_func.size() - 1].source = source_file;
+	  				all_func[all_func.size() - 1].sline_was = true;
+	  			}
+	  		}
+	  	}
+	  	if (curr_stab.n_type == N_FUN) {
+	  		myStab new_function;
+	  		new_function.name.resize(100);
+			char * name = (char *) new_function.name.c_str();
 			char * read_fun_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
 			while(*read_fun_name != ':') {
 				*name = *read_fun_name;
@@ -215,11 +185,19 @@ int main(int argc, char *argv[]) {
 				name++;
 			}
 			*name = '\0';
-			true_f_name = fun_name;
+			new_function.index = j;
+			new_function.start = curr_stab.n_value;
+			new_function.sline_was = false;
+			new_function.so_was = false;
+			if (all_func.size() != 0) {
+				if (!all_func[all_func.size() - 1].so_was) {
+	  				all_func[all_func.size() - 1].end = curr_stab.n_value;
+	  			}
+	  		}
 
-			//cout << st_index << ' '<< curr_stab.n_strx << endl;
-	    		//cout << "J:"  << fun_name << endl;
-			//printf("%s %d 0x%08x 0x%08x %s\n", fun_name.c_str(), j, curr_start.n_value, 1, "SOURCE");
+			all_func.push_back(new_function);
+
+
 	  	}
 		//SORT
 
