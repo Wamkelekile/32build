@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <stab.h>
+#include <string>
 #include <vector>
 #include <algorithm>
 using namespace std;
@@ -140,23 +141,13 @@ int main(int argc, char *argv[]) {
 	int count_of_blocks = stab_header.sh_size / sizeof(curr_stab);
 	myStab stab_to_add;
 	string source_file;
-	source_file.resize(100);
 	for (int j = 1; j < count_of_blocks; ++j) {
-
-	  	pread(f.get_fd(), &curr_stab, sizeof(curr_stab),
+		pread(f.get_fd(), &curr_stab, sizeof(curr_stab),
 			stab_header.sh_offset + sizeof(curr_stab) * j);
-		//if (in_comp) cout << "WELL" << endl;
 		if (curr_stab.n_type == N_SO || curr_stab.n_type == N_SOL) {
-			// string source_name;
-			// source_file.resize(100);
-			char * source_ptr = (char *) source_file.c_str();
 			char * read_source_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
-			while(*read_source_name != '\0') {
-				*source_ptr = *read_source_name;
-				read_source_name++;
-				source_ptr++;
-			}
-			*source_ptr = '\0';
+			string nanana(read_source_name);
+			source_file = nanana;
 			if ((strcmp(source_file.c_str(), "") == 0) && curr_stab.n_type == N_SO) {
 				if (all_func.size() != 0) {
 		  			all_func[all_func.size() - 1].end = curr_stab.n_value;
@@ -164,31 +155,28 @@ int main(int argc, char *argv[]) {
 		  		}
 
 			}
-			// source_file = source_name;
 	  	}
 	  	if (curr_stab.n_type == N_SLINE) {
 	  		if (all_func.size() != 0) {
-	  			if (!all_func[all_func.size() - 1].sline_was) {
-	  				all_func[all_func.size() - 1].source = source_file;
-	  				all_func[all_func.size() - 1].sline_was = true;
-	  			}
+	  		  if (!all_func[all_func.size() - 1].sline_was) {
+	  		      all_func[all_func.size() - 1].source = source_file;
+		              //cout << "NAME IN SLINE:" << source_file << endl;
+	  		      all_func[all_func.size() - 1].sline_was = true;
+	  		  }
 	  		}
 	  	}
 	  	if (curr_stab.n_type == N_FUN) {
 	  		myStab new_function;
-	  		new_function.name.resize(100);
-			char * name = (char *) new_function.name.c_str();
 			char * read_fun_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
-			while(*read_fun_name != ':') {
-				*name = *read_fun_name;
-				read_fun_name++;
-				name++;
-			}
-			*name = '\0';
+			string nananame(read_fun_name);
 			new_function.index = j;
 			new_function.start = curr_stab.n_value;
 			new_function.sline_was = false;
 			new_function.so_was = false;
+			new_function.name = nananame.substr(0, nananame.find(':'));
+
+			new_function.source = source_file;
+
 			if (all_func.size() != 0) {
 				if (!all_func[all_func.size() - 1].so_was) {
 	  				all_func[all_func.size() - 1].end = curr_stab.n_value;
