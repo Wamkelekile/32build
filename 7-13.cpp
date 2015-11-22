@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <stab.h>
+#include <string>
 #include <vector>
 #include <algorithm>
 using namespace std;
@@ -31,6 +32,8 @@ struct myStab {
 	uintptr_t start;
 	uintptr_t end;
 	string source;
+	bool sline_was;
+	bool so_was;
 
 };
 
@@ -136,90 +139,53 @@ int main(int argc, char *argv[]) {
 	vector<myStab> all_func;
 	Stab curr_stab;
 	int count_of_blocks = stab_header.sh_size / sizeof(curr_stab);
-	bool in_comp = false;
-	bool is_func = false;
-	bool sline_was = false;
-	string source, true_f_name;
-	int f_index;
-	uintptr_t f_start;
-	for (int j = 0; j < count_of_blocks; ++j) {
-		if (!j) continue;
-	  	pread(f.get_fd(), &curr_stab, sizeof(curr_stab),
+	myStab stab_to_add;
+	string source_file;
+	for (int j = 1; j < count_of_blocks; ++j) {
+		pread(f.get_fd(), &curr_stab, sizeof(curr_stab),
 			stab_header.sh_offset + sizeof(curr_stab) * j);
-		//if (in_comp) cout << "WELL" << endl;
-		if (curr_stab.n_type == N_SO) {
-			if (in_comp) { //push func_desc we have f_end and source
-				//printf("%s %d 0x%08x 0x%08x %s\n", true_f_name.c_str(), f_index, f_start, curr_stab.n_value, source.c_str());
-				myStab tmp_f;
-				tmp_f.name = true_f_name;
-				tmp_f.index = f_index;
-				tmp_f.start = f_start;
-				tmp_f.end = curr_stab.n_value;
-				tmp_f.source = source;
-				all_func.push_back(tmp_f);
-				sline_was = false;
-				is_func = false;
-				source = "";
-			} else {
-				string source_name;
-				source_name.resize(50);
-				char * source_ptr = (char *) source_name.c_str();
-				char * read_source_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
-				while(*read_source_name != '\0') {
-					*source_ptr = *read_source_name;
-					read_source_name++;
-					source_ptr++;
-				}
-				*source_ptr = '\0';
-				source = source_name;
-			}
-			in_comp  = !in_comp;
-			//is_func = false;
-		}
-		if ((curr_stab.n_type == N_SOL) && (is_func) && (!sline_was)) {
-			string source_name;
-			source_name.resize(50);
-			char * source_ptr = (char *) source_name.c_str();
+		if (curr_stab.n_type == N_SO || curr_stab.n_type == N_SOL) {
 			char * read_source_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
-			while(*read_source_name != '\0') {
-				*source_ptr = *read_source_name;
-				read_source_name++;
-				source_ptr++;
-			}
-			*source_ptr = '\0';
-			source = source_name;
-		}
-		if ((curr_stab.n_type == N_SLINE) && is_func) sline_was = true;
-	  	if (curr_stab.n_type == N_FUN) {
-			f_start = curr_stab.n_value;
-			f_index = j;
-			if (is_func) { // push f_sescription
-				//
-				myStab tmp_f;
-				tmp_f.name = true_f_name;
-				tmp_f.index = f_index;
-				tmp_f.start = f_start;
-				tmp_f.end = curr_stab.n_value;
-				tmp_f.source = source;
-				all_func.push_back(tmp_f);
-				sline_was = false;
-			}
-			is_func = true; // expect N_So or N_func
-			string fun_name;
-			fun_name.resize(50);
-			char * name = (char *) fun_name.c_str();
-			char * read_fun_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
-			while(*read_fun_name != ':') {
-				*name = *read_fun_name;
-				read_fun_name++;
-				name++;
-			}
-			*name = '\0';
-			true_f_name = fun_name;
+			string nanana(read_source_name);
+			source_file = nanana;
+			if ((strcmp(source_file.c_str(), "") == 0) && curr_stab.n_type == N_SO) {
+				if ((all_func.size() != 0) && (!all_func[all_func.size() - 1].so_was)) {
+		  			all_func[all_func.size() - 1].end = curr_stab.n_value;
+		  			all_func[all_func.size() - 1].so_was = true;
+		  		}
 
-			//cout << st_index << ' '<< curr_stab.n_strx << endl;
-	    		//cout << "J:"  << fun_name << endl;
-			//printf("%s %d 0x%08x 0x%08x %s\n", fun_name.c_str(), j, curr_start.n_value, 1, "SOURCE");
+			}
+	  	}
+	  	if (curr_stab.n_type == N_SLINE) {
+	  		if (all_func.size() != 0) {
+	  		  if (!all_func[all_func.size() - 1].sline_was) {
+	  		      all_func[all_func.size() - 1].source = source_file;
+		              //cout << "NAME IN SLINE:" << source_file << endl;
+	  		      all_func[all_func.size() - 1].sline_was = true;
+	  		  }
+	  		}
+	  	}
+	  	if (curr_stab.n_type == N_FUN) {
+	  		myStab new_function;
+			char * read_fun_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
+			string nananame(read_fun_name);
+			new_function.index = j;
+			new_function.start = curr_stab.n_value;
+			new_function.sline_was = false;
+			new_function.so_was = false;
+			new_function.name = nananame.substr(0, nananame.find(':'));
+
+			new_function.source = source_file;
+
+			if (all_func.size() != 0) {
+				if (!all_func[all_func.size() - 1].so_was) {
+	  				all_func[all_func.size() - 1].end = curr_stab.n_value;
+	  			}
+	  		}
+
+			all_func.push_back(new_function);
+
+
 	  	}
 		//SORT
 
@@ -230,20 +196,18 @@ int main(int argc, char *argv[]) {
 	// 	printf("%s %d 0x%08x 0x%08x %s\n", all_func[k].name.c_str(), all_func[k].index, all_func[k].start, all_func[k].end, all_func[k].source.c_str());
 	// }
 	uint32_t num;
-	uint32_t smoff;
-	uint16_t line_num;
-	string addr_name;
-	string addr_source;
-
-
-	bool found = false;
 	while(scanf("%x", &num) == 1) {
+		bool found = false;
+		uint32_t smoff;
+		uint16_t line_num;
+		string addr_name;
+		string addr_source;
 		for (size_t k = 0; k < all_func.size(); ++k) {
 			if ((num >= all_func[k].start) && (num < all_func[k].end)) { // we have source, func, shoff
+				found = true;
 				addr_name = all_func[k].name;
 				addr_source = all_func[k].source;
-				found = true;
-				smoff = all_func[k].start - num;
+				smoff = num - all_func[k].start;
 				std::vector<Stab> stab_2(2);
 				Stab curr_stab;
 				for (int i = all_func[k].index; i < count_of_blocks; ++i) {
@@ -257,20 +221,13 @@ int main(int argc, char *argv[]) {
 				  		} else if (curr_stab.n_value == smoff) {// это наша
 				  			line_num = curr_stab.n_desc;
 				  			break;
-
-
 				  		} else { // наша предыдущая
 				  			line_num = stab_2[1].n_desc;
 				  			break;
-
 				  		}
 
 				  	}
 				}
-
-
-
-
 				break;
 			}
 		}
