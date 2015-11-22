@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
 			string nanana(read_source_name);
 			source_file = nanana;
 			if ((strcmp(source_file.c_str(), "") == 0) && curr_stab.n_type == N_SO) {
-				if (all_func.size() != 0) {
+				if ((all_func.size() != 0) && (!all_func[all_func.size() - 1].so_was)) {
 		  			all_func[all_func.size() - 1].end = curr_stab.n_value;
 		  			all_func[all_func.size() - 1].so_was = true;
 		  		}
