@@ -37,15 +37,34 @@ struct myStab {
 
 };
 
-bool comp(const myStab& stab1, const myStab& stab2) {
-	int res = strcmp(stab1.name.c_str(), stab2.name.c_str());
-	if (res < 0) {
-		return 1;
-	} else if (res == 0) {
-		if (stab1.start < stab2.start) return 1;
-		else return 0;
-	} else return 0;
+int binary_search(std::vector<myStab> &all_func, size_t L, size_t R, uint32_t key) {
+	if (!all_func.size()) return -1;
+	size_t M;
+	while (1) {
+		M = (L + R) / 2;
+		if (key < all_func[M].start) {
+			R = M - 1;
+		} else if(key >= all_func[M].end) {
+			L = M + 1;
+		} else return M;
+		if (L > R) return -1;
+	}
 }
+
+bool comp2(const myStab& stab1, const myStab& stab2) {
+	if (stab1.start < stab2.start) return 1;
+	else return 0;
+}
+
+// bool comp(const myStab& stab1, const myStab& stab2) {
+// 	int res = strcmp(stab1.name.c_str(), stab2.name.c_str());
+// 	if (res < 0) {
+// 		return 1;
+// 	} else if (res == 0) {
+// 		if (stab1.start < stab2.start) return 1;
+// 		else return 0;
+// 	} else return 0;
+// }
 
 class File {
 public:
@@ -76,11 +95,6 @@ private:
 
 
 int main(int argc, char *argv[]) {
-  //long long count = 0;
-	//if (!(access(argv[1], F_OK) == 0) ) {
-	//	std::cout << -1 << std::endl;
-	//	return 0;
-	//}
 	File f(argv[1]);
 	if (f.get_fd() == -1) {
 		return 0;
@@ -105,6 +119,7 @@ int main(int argc, char *argv[]) {
   	stabstr_header.sh_type = 0;
   	stabstr_header.sh_flags = 0;
   	stabstr_header.sh_addr = 0;
+  	stab_header.sh_offset = 0;
   	stabstr_header.sh_offset = 0;
   	stabstr_header.sh_size = 0;
   	stabstr_header.sh_link = 0;
@@ -191,51 +206,45 @@ int main(int argc, char *argv[]) {
 
 	  // name index start end source
 	}
-	// sort(all_func.begin(), all_func.end(), comp);
+	sort(all_func.begin(), all_func.end(), comp2);
 	// for (size_t k = 0; k < all_func.size(); ++k) {
 	// 	printf("%s %d 0x%08x 0x%08x %s\n", all_func[k].name.c_str(), all_func[k].index, all_func[k].start, all_func[k].end, all_func[k].source.c_str());
 	// }
 	uint32_t num;
 	while(scanf("%x", &num) == 1) {
-		bool found = false;
-		uint32_t smoff;
-		uint16_t line_num;
-		string addr_name;
-		string addr_source;
-		for (size_t k = 0; k < all_func.size(); ++k) {
-			if ((num >= all_func[k].start) && (num < all_func[k].end)) { // we have source, func, shoff
-				found = true;
-				addr_name = all_func[k].name;
-				addr_source = all_func[k].source;
-				smoff = num - all_func[k].start;
-				std::vector<Stab> stab_2(2);
-				Stab curr_stab;
-				for (int i = all_func[k].index; i < count_of_blocks; ++i) {
-					/* code */
-				  	pread(f.get_fd(), &curr_stab, sizeof(curr_stab),
-						stab_header.sh_offset + sizeof(curr_stab) * i);
-				  	if (curr_stab.n_type == N_SLINE) {
-				  		if (curr_stab.n_value < smoff) {
-				  			stab_2[0] = stab_2[1];
-				  			stab_2[1] = curr_stab;
-				  		} else if (curr_stab.n_value == smoff) {// это наша
-				  			line_num = curr_stab.n_desc;
-				  			break;
-				  		} else { // наша предыдущая
-				  			line_num = stab_2[1].n_desc;
-				  			break;
-				  		}
+		int res = binary_search(all_func, 0, all_func.size() - 1, num);
+		if (res == -1) printf("0x%08x::::\n", num);
+		else {
+			uint16_t line_num = 0;
+			string addr_name = all_func[res].name;
+			string addr_source = all_func[res].source;
+			uint32_t smoff = num - all_func[res].start;
+			std::vector<Stab> stab_2(2);
+			Stab curr_stab;
+			for (int i = all_func[res].index; i < count_of_blocks; ++i) {
+				/* code */
+			  	pread(f.get_fd(), &curr_stab, sizeof(curr_stab),
+					stab_header.sh_offset + sizeof(curr_stab) * i);
+			  	if (curr_stab.n_type == N_SLINE) {
+			  		if (curr_stab.n_value < smoff) {
+			  			stab_2[0] = stab_2[1];
+			  			stab_2[1] = curr_stab;
+			  		} else if (curr_stab.n_value == smoff) {// это наша
+			  			line_num = curr_stab.n_desc;
+			  			break;
+			  		} else { // наша предыдущая
+			  			line_num = stab_2[1].n_desc;
+			  			break;
+			  		}
 
-				  	}
-				}
-				break;
+			  	}
 			}
+			printf("0x%08x:%s:%s:%x:%d\n", num, addr_source.c_str(),addr_name.c_str(), smoff, line_num );
+
 		}
-		if (found) printf("0x%08x:%s:%s:%x:%d\n", num, addr_source.c_str(),addr_name.c_str(), smoff, line_num ); 
-		else printf("0x%08x::::\n", num);
-		found = false;
 	}
 
 
 	return 0;
+
 }
