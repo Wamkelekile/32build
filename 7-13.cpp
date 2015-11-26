@@ -37,27 +37,27 @@ struct myStab {
 
 };
 
-// int binary_search(std::vector<myStab> &all_func, size_t L, size_t R, uint32_t key) {
-// 	if (!all_func.size()) return -1;
-// 	size_t M;
-// 	while (1) {
-// 		M = (L + R) / 2;
-// 		if (key < all_func[M].start) {
-// 			R = M - 1;
-// 		} else if(key >= all_func[M].end) {
-// 			L = M + 1;
-// 		} else return M;
-// 		if (L > R) return -1;
-// 	}
-// }
-
-int binary_search(std::vector<myStab> &all_func, uint32_t key, size_t r, size_t l = 0){ // (arr масив в котором ищем, s то что ищем, r размер масива)
-    int m = (l + r) / 2;
-    if ( key >= all_func[m].start && key < all_func[m].end ) return m;
-    if (m == l || m == r) return -1;
-    if (  key >= all_func[m].end ) binsearch(all_func, key, r, m);
-    else binsearch(all_func, key, m); 
+int binary_search(std::vector<myStab> &all_func, uint32_t key, size_t R, size_t L) {
+ 	if (!all_func.size()) return -1;
+	size_t M;
+ 	while (1) {
+ 		M = (L + R) / 2;
+ 		if (key < all_func[M].start) {
+ 			R = M - 1;
+ 		} else if(key >= all_func[M].end) {
+ 			L = M + 1;
+ 		} else if (key >= all_func[M].start && key <= all_func[M].end) return M;
+ 		if (L > R) return -1;
+ 	}
 }
+
+//int binary_search(std::vector<myStab> &all_func, uint32_t key, size_t r, size_t l){
+//    int m = (l + r) / 2;
+//    if ( key >= all_func[m].start && key < all_func[m].end ) return m;
+//    if (m == l || m == r) return -1;
+//    if (  key >= all_func[m].end ) binary_search(all_func, key, r, m);
+//    else if (key < all_func[m].start) binary_search(all_func, key, m, l);
+//}
 
 bool comp2(const myStab& stab1, const myStab& stab2) {
 	if (stab1.start < stab2.start) return 1;
@@ -134,7 +134,6 @@ int main(int argc, char *argv[]) {
   	stabstr_header.sh_info = 0;
   	stabstr_header.sh_addralign = 0;
   	stabstr_header.sh_entsize = 0;
-  	
 	for(int i = 0; i <= header_stat.e_shnum - 1; ++i) {
 		Elf32_Shdr cur_sec_header;
 		pread(f.get_fd(), &cur_sec_header,
@@ -220,7 +219,7 @@ int main(int argc, char *argv[]) {
 	// }
 	uint32_t num;
 	while(scanf("%x", &num) == 1) {
-		int res = binary_search(all_func, num, all_func.size() - 1);
+		int res = binary_search(all_func, num, all_func.size() - 1, 0);
 		if (res == -1) printf("0x%08x::::\n", num);
 		else {
 			uint16_t line_num = 0;
