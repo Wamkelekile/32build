@@ -37,18 +37,26 @@ struct myStab {
 
 };
 
-int binary_search(std::vector<myStab> &all_func, size_t L, size_t R, uint32_t key) {
-	if (!all_func.size()) return -1;
-	size_t M;
-	while (1) {
-		M = (L + R) / 2;
-		if (key < all_func[M].start) {
-			R = M - 1;
-		} else if(key >= all_func[M].end) {
-			L = M + 1;
-		} else return M;
-		if (L > R) return -1;
-	}
+// int binary_search(std::vector<myStab> &all_func, size_t L, size_t R, uint32_t key) {
+// 	if (!all_func.size()) return -1;
+// 	size_t M;
+// 	while (1) {
+// 		M = (L + R) / 2;
+// 		if (key < all_func[M].start) {
+// 			R = M - 1;
+// 		} else if(key >= all_func[M].end) {
+// 			L = M + 1;
+// 		} else return M;
+// 		if (L > R) return -1;
+// 	}
+// }
+
+int binary_search(std::vector<myStab> &all_func, uint32_t key, size_t r, size_t l = 0){ // (arr масив в котором ищем, s то что ищем, r размер масива)
+    int m = (l + r) / 2;
+    if ( key >= all_func[m].start && key < all_func[m].end ) return m;
+    if (m == l || m == r) return -1;
+    if (  key >= all_func[m].end ) binsearch(all_func, key, r, m);
+    else binsearch(all_func, key, m); 
 }
 
 bool comp2(const myStab& stab1, const myStab& stab2) {
@@ -212,7 +220,7 @@ int main(int argc, char *argv[]) {
 	// }
 	uint32_t num;
 	while(scanf("%x", &num) == 1) {
-		int res = binary_search(all_func, 0, all_func.size() - 1, num);
+		int res = binary_search(all_func, num, all_func.size() - 1);
 		if (res == -1) printf("0x%08x::::\n", num);
 		else {
 			uint16_t line_num = 0;
