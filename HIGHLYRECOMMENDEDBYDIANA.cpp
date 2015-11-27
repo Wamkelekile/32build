@@ -283,7 +283,7 @@ int main(int argc, char *argv[]) {
 			uint32_t smoff = num - all_func_res[res].start;
 			std::vector<Stab> stab_2(2);
 			Stab curr_stab;
-			for (int i = all_func_res[res].index + 1; i < count_of_blocks; ++i) {
+			for (int i = all_func_res[res].index; i < count_of_blocks; ++i) {
 				/* code */
 			  	pread(f.get_fd(), &curr_stab, sizeof(curr_stab),
 					stab_header.sh_offset + sizeof(curr_stab) * i);
@@ -299,7 +299,7 @@ int main(int argc, char *argv[]) {
 			  			break;
 			  		}
 
-			  	} else if (curr_stab.n_type == N_SO || curr_stab.n_type == N_FUN)  {
+			  	} else if ((curr_stab.n_type == N_SO || curr_stab.n_type == N_FUN) && (i != all_func_res[res].index))  {
 					line_num = stab_2[1].n_desc;
 					break;
 				}
