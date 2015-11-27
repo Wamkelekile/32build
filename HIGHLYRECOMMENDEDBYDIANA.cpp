@@ -182,24 +182,24 @@ int main(int argc, char *argv[]) {
 			stab_header.sh_offset + sizeof(curr_stab) * j);
 		if (curr_stab.n_type == N_SO || curr_stab.n_type == N_SOL) {
 			// небольшая модификация в массив еще добавим все SO
-			if (curr_stab.n_type == N_SO) {
-				myStab stab_with_so;
-
-				stab_with_so.start = curr_stab.n_value;
-				stab_with_so.name = "";
-				stab_with_so.index = -77; // Договоримся, что если стаб индекс =-77 то это SO а не FUN
-				stab_with_so.end = 0;
-				string stab_with_so.source = "";
-				stab_with_so.sline_was = false;
-				stab_with_so.so_was = false;
-				all_SO.push_back(stab_with_so);
-
-
-			}
+			//if (curr_stab.n_type == N_SO) {
+			//	myStab stab_with_so;
+			//	stab_with_so.start = curr_stab.n_value;
+			//	stab_with_so.index = -77; // Договоримся, что если стаб индекс =-77 то это SO а не FUN
+			//	stab_with_so.end = 0;
+			//	all_SO.push_back(stab_with_so);
+			//}
 			char * read_source_name = current_char + stabstr_header.sh_offset + curr_stab.n_strx;
 			string nanana(read_source_name);
 			source_file = nanana;
 			if ((strcmp(source_file.c_str(), "") == 0) && curr_stab.n_type == N_SO) {
+				// my nowa
+				myStab stab_with_so;
+				stab_with_so.start = curr_stab.n_value;
+				stab_with_so.index = -77; // Договоримся, что если стаб индекс =-77 то это SO а не FUN
+				stab_with_so.end = 0;
+				all_SO.push_back(stab_with_so);
+				// my nowa
 				if ((all_func.size() != 0) && (!all_func[all_func.size() - 1].so_was)) {
 		  			all_func[all_func.size() - 1].end = curr_stab.n_value;
 		  			all_func[all_func.size() - 1].so_was = true;
@@ -237,14 +237,41 @@ int main(int argc, char *argv[]) {
 	  	}
 	}
 	// Объединяем два вектора
+	//printf("all_SO: ");
+	//for (size_t k = 0; k < all_SO.size(); ++k) {
+	//	printf("0x%08x ", all_SO[k].start);
+	//}
+	//printf("\n");
+	//printf("all_FUN: ");
+	//for (size_t k = 0; k < all_func.size(); ++k) {
+	//	printf("0x%08x ", all_func[k].start);
+	//}
+	//printf("\n");
+	//printf("merged: ");
+
 	all_func.insert(all_func.end(), all_SO.begin(), all_SO.end());
 	// Сортируем все стабы по началу, чтоб потом его нормализвать и привести к виду где у каждой функции нормальное начало и конец
+	//for (size_t k = 0; k < all_func.size(); ++k) {
+	//	printf("0x%08x ", all_func[k].start);
+	//}
+	//printf("\n");
 	sort(all_func.begin(), all_func.end(), comp2);
 	// Нормализуем
-	myStab all_func_res = normalization(all_func);
-	// for (size_t k = 0; k < all_func.size(); ++k) {
-	// 	printf("%s %d 0x%08x 0x%08x %s\n", all_func[k].name.c_str(), all_func[k].index, all_func[k].start, all_func[k].end, all_func[k].source.c_str());
-	// }
+	//printf("Sorted:\n");
+	//for (size_t k = 0; k < all_func.size(); ++k) {
+	//	printf("0x%08x 0x%08x %s\n", all_func[k].start, all_func[k].end, all_func[k].name.c_str());
+	//}
+	vector<myStab> all_func_res = normalization(all_func);
+	//printf("RESULT:\n");
+
+	//for (size_t k = 0; k < all_func_res.size(); ++k) {
+	//	printf("0x%08x 0x%08x %s\n", all_func_res[k].start, all_func_res[k].end, all_func_res[k].name.c_str());
+	//}
+	//
+	//printf("\n");
+	//for (size_t k = 0; k < all_func.size(); ++k) {
+	//	printf("%s %d 0x%08x 0x%08x %s\n", all_func[k].name.c_str(), all_func[k].index, all_func[k].start, all_func[k].end, all_func[k].source.c_str());
+	//}
 	uint32_t num;
 	while(scanf("%x", &num) == 1) {
 		int res = binary_search(all_func_res, num, all_func_res.size() - 1, 0);
@@ -256,7 +283,7 @@ int main(int argc, char *argv[]) {
 			uint32_t smoff = num - all_func_res[res].start;
 			std::vector<Stab> stab_2(2);
 			Stab curr_stab;
-			for (int i = all_func_res[res].index; i < count_of_blocks; ++i) {
+			for (int i = all_func_res[res].index + 1; i < count_of_blocks; ++i) {
 				/* code */
 			  	pread(f.get_fd(), &curr_stab, sizeof(curr_stab),
 					stab_header.sh_offset + sizeof(curr_stab) * i);
@@ -272,7 +299,10 @@ int main(int argc, char *argv[]) {
 			  			break;
 			  		}
 
-			  	}
+			  	} else if (curr_stab.n_type == N_SO || curr_stab.n_type == N_FUN)  {
+					line_num = stab_2[1].n_desc;
+					break;
+				}
 			}
 			printf("0x%08x:%s:%s:%x:%d\n", num, addr_source.c_str(),addr_name.c_str(), smoff, line_num );
 
