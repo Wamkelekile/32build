@@ -66,7 +66,7 @@ int binary_search(std::vector<myStab> &all_func, uint32_t key, size_t R, size_t 
  			R = M - 1;
  		} else if(key >= all_func[M].end) {
  			L = M + 1;
- 		} else if (key >= all_func[M].start && key <= all_func[M].end) return M;
+ 		} else if (key >= all_func[M].start && key < all_func[M].end) return M;
  		if (L > R) return -1;
  	}
 }
