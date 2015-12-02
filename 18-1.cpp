@@ -4,16 +4,18 @@
 #include <unistd.h>
 using namespace std;
 
+//pthread_t tid[10];
+
 void *fun(void *i) {
-	// cout << (int*)i << endl;
-	return;
+	cout << (int*)i << endl;
+	return NULL;
 }
 
-int main(int argc, char const *argv[]) {
-	pthread_t tid;
-	for (int i = 0; i < 10; i++) {
-		pthread_create(&tid, NULL, fun, (void *)i);
+int main() {
+	pthread_t tid[10];
+	for (int i = 0; i < 10; ++i) {
+		pthread_create(&tid[i], NULL, fun, (void *)i);
 	}
-	pthread_join(tid, NULL);
+	pthread_join(tid[9], NULL);
 	return 0;
 }
