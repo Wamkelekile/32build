@@ -7,7 +7,8 @@ using namespace std;
 //pthread_t tid[10];
 
 void *fun(void *i) {
-	cout << (int*)i << endl;
+	int g = (int)i;
+	cout << g << endl;
 	return NULL;
 }
 
