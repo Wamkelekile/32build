@@ -79,14 +79,15 @@ int main(int argc, char const *argv[]) {
         signal(SIGUSR1, hnd);
         kill(getppid(), SIGUSR1);
         kill(getpid(), SIGUSR1);
-        // hnd(1);
+        //hnd(1);
         exit(0);
         close(to[1]);
         close(back[0]);
     } else {
         close(back[0]);
         close(to[1]);
-        // hndd(1);
+        //hndd(1);
+	signal(SIGUSR1, hndd);
         wait(0);
         close(back[1]);
         close(to[0]);
